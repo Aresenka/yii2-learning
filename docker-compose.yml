@@ -1,0 +1,58 @@
+version: '3.3'
+services:
+  php:
+    image: yiisoftware/yii2-php:8.1-fpm-nginx
+    depends_on:
+      - postgres
+    volumes:
+      - ~/.composer-docker/cache:/root/.composer/cache:delegated
+      - ./:/app:delegated
+    ports:
+      - '80:80'
+    networks:
+      - default
+
+  # This is the configuration for our PostgreSQL database container
+  # Note the `postgres` name is important, in out Node app when we refer
+  # to  `host: "postgres"` that value is mapped on the network to the
+  # address of this container.
+  postgres:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      # You can set the value of environment variables
+      # in your docker-compose.yml file
+      # Our Node app will use these to connect
+      # to the database
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PWD}
+      - POSTGRES_DB=${PG_DB}
+    ports:
+      # Standard port for PostgreSQL databases
+      - "54320:5432"
+    volumes:
+      # When the PostgresSQL container is started it will run any scripts
+      # provided in the `docker-entrypoint-initdb.d` directory, this connects
+      # our seed file to that directory so that it gets run
+      - db:/var/lib/postgresql/data
+    networks:
+      - default
+
+  # PostgreSQL pgAdmin panel accessible at http://localhost:16543/
+  pgadmin-compose:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGA_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGA_PWD}
+    ports:
+      - "16543:80"
+    depends_on:
+      - postgres
+
+volumes:
+  db:
+    driver: local
+
+networks:
+  default:
+    driver: bridge
